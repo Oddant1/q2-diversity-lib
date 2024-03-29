@@ -49,9 +49,20 @@ METRICS = {
 @_validate_requested_cpus
 def faith_pd(table: BIOMV210Format, phylogeny: NewickFormat,
              threads: int = 1) -> AlphaDiversityFormat:
+    import pandas as pd
     vec = AlphaDiversityFormat()
     cmd = ['faithpd', '-i', str(table), '-t', str(phylogeny), '-o', str(vec)]
     _omp_cmd_wrapper(threads, cmd)
+
+    # We may also be able to change the return format to Series so the transformer
+    # from Series to AlphaDiversityFormat is invoked which will drop the index label.
+    # That is the reason most of these don't have this issue. Most of them are invoking
+    # that transformer, but this one just writes directly into a file
+    df = pd.read_csv(str(vec), sep='\t')
+    df.set_index('#SampleID', inplace=True)
+    df.index.rename('', inplace=True)
+    df.to_csv(str(vec), sep='\t', header=True)
+
     return vec
 
 
